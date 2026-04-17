@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Focus Steps
 
 Focus Steps is an ADHD-friendly life management dashboard built with Next.js, TypeScript, and Tailwind CSS.
@@ -103,3 +104,7 @@ This flow is designed to show the app in under 2 minutes:
 ## Submission Summary
 
 Focus Steps is a calm, ADHD-friendly life dashboard that combines daily focus, task breakdown, reminders, meals, home organization, and homeschool planning in one modular app. It is built to reduce overwhelm, support real family life, and help users keep moving with one small next step at a time.
+=======
+# home-base
+An ADHD-friendly life management app that helps homeschooling families and overwhelmed users organize daily tasks, habits, reminders, meals, and homeschool planning in one calm, customizable dashboard.
+>>>>>>> 0de1e554d61ebfdf89b0844f2a62162b0b32cc88
