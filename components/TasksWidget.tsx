@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 import { WidgetShell } from "@/components/WidgetShell";
 import { getNextTaskStep, getTaskProgress } from "@/lib/dashboard";
 import { Task } from "@/types/dashboard";
-import { supabase } from "@/lib/supabase";
+
 type TasksWidgetProps = {
   tasks: Task[];
   today: string;
@@ -34,27 +34,16 @@ export function TasksWidget({
   const [stepDrafts, setStepDrafts] = useState<Record<string, string>>({});
 
   function submitTask(event: FormEvent<HTMLFormElement>) {
-async function submitTask(event: FormEvent<HTMLFormElement>) {
-  event.preventDefault();
-  const trimmed = title.trim();
-  if (!trimmed) return;
-
-  await supabase.from("tasks").insert([
-    {
-      title: trimmed,
-      kind,
-      completed: false,
-      scheduled_for: markForToday ? today : null,
-    },
-  ]);
-
-  setTitle("");
-  setFirstStep("");
-  setKind("single");
-  setMarkForToday(true);
-
-  window.location.reload(); // quick way to refresh tasks
-}
+    event.preventDefault();
+    const trimmed = title.trim();
+    if (!trimmed) {
+      return;
+    }
+    onAddTask(trimmed, kind, firstStep.trim(), markForToday ? today : null);
+    setTitle("");
+    setFirstStep("");
+    setKind("single");
+    setMarkForToday(true);
   }
 
   function submitStep(event: FormEvent<HTMLFormElement>, taskId: string) {
@@ -75,7 +64,10 @@ async function submitTask(event: FormEvent<HTMLFormElement>) {
       theme="peach"
       icon="tasks"
     >
-      <form className="space-y-3 rounded-xl bg-orange-50/70 p-4 ring-1 ring-orange-100/80" onSubmit={submitTask}>
+      <form
+        className="space-y-3 rounded-xl bg-orange-50/70 p-4 ring-1 ring-orange-100/80"
+        onSubmit={submitTask}
+      >
         <input
           value={title}
           onChange={(event) => setTitle(event.target.value)}
@@ -117,6 +109,7 @@ async function submitTask(event: FormEvent<HTMLFormElement>) {
             No tasks yet. Add one task, or start with a tiny first step if that feels easier.
           </div>
         ) : null}
+
         {tasks.map((task) => {
           const nextStep = getNextTaskStep(task);
           const progress = getTaskProgress(task);
@@ -154,14 +147,7 @@ async function submitTask(event: FormEvent<HTMLFormElement>) {
               {task.kind === "single" ? (
                 <button
                   type="button"
-                  onClick={async () => {
-  await supabase
-    .from("tasks")
-    .update({ completed: true })
-    .eq("id", task.id);
-
-  window.location.reload();
-}}
+                  onClick={() => onCompleteTask(task.id)}
                   disabled={task.completed}
                   className="soft-button mt-5 disabled:cursor-not-allowed disabled:opacity-45"
                 >
@@ -179,14 +165,7 @@ async function submitTask(event: FormEvent<HTMLFormElement>) {
                       </p>
                       <button
                         type="button"
-                       onClick={async () => {
-  await supabase
-    .from("tasks")
-    .update({ completed: true })
-    .eq("id", task.id);
-
-  window.location.reload();
-}}id, nextStep.id)}
+                        onClick={() => onCompleteStep(task.id, nextStep.id)}
                         className="soft-button mt-4"
                       >
                         I did this
