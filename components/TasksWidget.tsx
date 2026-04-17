@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 import { WidgetShell } from "@/components/WidgetShell";
 import { getNextTaskStep, getTaskProgress } from "@/lib/dashboard";
 import { Task } from "@/types/dashboard";
-
+import { supabase } from "@/lib/supabase";
 type TasksWidgetProps = {
   tasks: Task[];
   today: string;
@@ -34,16 +34,27 @@ export function TasksWidget({
   const [stepDrafts, setStepDrafts] = useState<Record<string, string>>({});
 
   function submitTask(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const trimmed = title.trim();
-    if (!trimmed) {
-      return;
-    }
-    onAddTask(trimmed, kind, firstStep.trim(), markForToday ? today : null);
-    setTitle("");
-    setFirstStep("");
-    setKind("single");
-    setMarkForToday(true);
+async function submitTask(event: FormEvent<HTMLFormElement>) {
+  event.preventDefault();
+  const trimmed = title.trim();
+  if (!trimmed) return;
+
+  await supabase.from("tasks").insert([
+    {
+      title: trimmed,
+      kind,
+      completed: false,
+      scheduled_for: markForToday ? today : null,
+    },
+  ]);
+
+  setTitle("");
+  setFirstStep("");
+  setKind("single");
+  setMarkForToday(true);
+
+  window.location.reload(); // quick way to refresh tasks
+}
   }
 
   function submitStep(event: FormEvent<HTMLFormElement>, taskId: string) {
@@ -143,7 +154,14 @@ export function TasksWidget({
               {task.kind === "single" ? (
                 <button
                   type="button"
-                  onClick={() => onCompleteTask(task.id)}
+                  onClick={async () => {
+  await supabase
+    .from("tasks")
+    .update({ completed: true })
+    .eq("id", task.id);
+
+  window.location.reload();
+}}
                   disabled={task.completed}
                   className="soft-button mt-5 disabled:cursor-not-allowed disabled:opacity-45"
                 >
@@ -161,7 +179,14 @@ export function TasksWidget({
                       </p>
                       <button
                         type="button"
-                        onClick={() => onCompleteStep(task.id, nextStep.id)}
+                       onClick={async () => {
+  await supabase
+    .from("tasks")
+    .update({ completed: true })
+    .eq("id", task.id);
+
+  window.location.reload();
+}}id, nextStep.id)}
                         className="soft-button mt-4"
                       >
                         I did this

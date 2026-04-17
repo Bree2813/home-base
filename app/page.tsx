@@ -15,7 +15,7 @@ import { RemindersWidget } from "@/components/RemindersWidget";
 import { SimpleListWidget } from "@/components/SimpleListWidget";
 import { TasksWidget } from "@/components/TasksWidget";
 import { TodayView } from "@/components/TodayView";
-import {
+import { supabase } from "@/lib/supabase";
   addMissingGroceries,
   createId,
   createInitialDashboardState,
@@ -78,6 +78,32 @@ export default function Home() {
 
   useEffect(() => {
     const raw = window.localStorage.getItem(storageKey);
+    useEffect(() => {
+  async function loadTasks() {
+    const { data, error } = await supabase.from("tasks").select("*");
+
+    if (error) {
+      console.error("Error loading tasks:", error);
+      return;
+    }
+
+    if (data) {
+      setState((current) => ({
+        ...current,
+        tasks: data.map((task) => ({
+          id: task.id,
+          title: task.title,
+          kind: "single",
+          completed: task.completed,
+          scheduledFor: null,
+          steps: [],
+        })),
+      }));
+    }
+  }
+
+  loadTasks();
+}, []);
     const savedView = window.localStorage.getItem(viewStorageKey);
     const savedLowEnergyMode = window.localStorage.getItem(lowEnergyStorageKey);
     if (raw) {
@@ -158,11 +184,39 @@ export default function Home() {
   }
 
   function addTask(
-    title: string,
-    kind: "single" | "multi",
-    firstStep: string,
-    scheduledFor: string | null,
-  ) {
+    async function addTask(
+  title: string,
+  kind: "single" | "multi",
+  firstStep: string,
+  scheduledFor: string | null,
+) {
+  const { data, error } = await supabase
+    .from("tasks")
+    .insert([{ title, completed: false }])
+    .select();
+
+  if (error) {
+    console.error("Error adding task:", error);
+    return;
+  }
+
+  if (data) {
+    setState((current) => ({
+      ...current,
+      tasks: [
+        {
+          id: data[0].id,
+          title,
+          kind,
+          completed: false,
+          scheduledFor,
+          steps: [],
+        },
+        ...current.tasks,
+      ],
+    }));
+  }
+}
     setState((current) => ({
       ...current,
       tasks: [
@@ -198,13 +252,24 @@ export default function Home() {
   }
 
   function completeTask(taskId: string) {
-    setState((current) => ({
-      ...current,
-      tasks: current.tasks.map((task) =>
-        task.id === taskId ? { ...task, completed: true } : task,
-      ),
-    }));
+    async function completeTask(taskId: string) {
+  const { error } = await supabase
+    .from("tasks")
+    .update({ completed: true })
+    .eq("id", taskId);
+
+  if (error) {
+    console.error("Error completing task:", error);
+    return;
   }
+
+  setState((current) => ({
+    ...current,
+    tasks: current.tasks.map((task) =>
+      task.id === taskId ? { ...task, completed: true } : task,
+    ),
+  }));
+}
 
   function completeTaskStep(taskId: string, stepId: string) {
     setState((current) => ({
